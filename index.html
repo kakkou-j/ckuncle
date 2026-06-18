@@ -201,12 +201,163 @@ footer.note{
   color:var(--ink-soft);
   letter-spacing:1px;
 }
+
+/* ---- Share card (auto-height, portrait, full checklist) ---- */
+#shareCard{
+  position:absolute;
+  left:-10000px;
+  top:0;
+  width:1080px;
+  background:var(--paper);
+  color:var(--ink);
+  font-family:'Noto Sans TC',sans-serif;
+  padding:64px 48px 56px;
+  display:flex;
+  flex-direction:column;
+}
+#shareCard .sc-eyebrow{
+  font-size:24px;
+  letter-spacing:3px;
+  color:var(--gold);
+  font-weight:700;
+  margin-bottom:8px;
+}
+#shareCard .sc-title{
+  font-family:'Noto Serif TC',serif;
+  font-weight:900;
+  font-size:60px;
+  line-height:1.2;
+  margin:0 0 16px;
+}
+#shareCard .sc-sub{
+  font-size:24px;
+  color:var(--ink-soft);
+  line-height:1.6;
+  border-left:5px solid var(--gold);
+  padding-left:16px;
+  margin:0 0 36px;
+}
+#shareCard .sc-stats{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:18px;
+  margin-bottom:28px;
+}
+#shareCard .sc-stat{
+  background:var(--bg);
+  border:2px solid var(--line);
+  border-radius:14px;
+  padding:20px 24px;
+}
+#shareCard .sc-stat .l{
+  font-size:18px;
+  color:var(--ink-soft);
+  letter-spacing:2px;
+  margin-bottom:6px;
+}
+#shareCard .sc-stat .v{
+  font-family:'Noto Serif TC',serif;
+  font-weight:900;
+  font-size:44px;
+  color:var(--indigo);
+}
+#shareCard .sc-stat.rank .v{color:var(--stamp);font-size:34px;line-height:1.25}
+#shareCard .sc-legend{
+  display:flex;
+  gap:28px;
+  font-size:20px;
+  color:var(--ink-soft);
+  margin-bottom:28px;
+}
+#shareCard .sc-legend .dot{
+  display:inline-block;
+  width:16px;height:16px;
+  border-radius:4px;
+  margin-right:8px;
+  vertical-align:-2px;
+}
+#shareCard .sc-legend .dot.seen{background:var(--stamp)}
+#shareCard .sc-legend .dot.unseen{background:var(--bg);border:2px solid var(--line)}
+#shareCard .sc-list{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:24px;
+}
+#shareCard .sc-col{
+  display:flex;
+  flex-direction:column;
+  gap:16px;
+}
+#shareCard .sc-year-block{
+  border:1px solid var(--line);
+  border-radius:12px;
+  padding:14px 16px 16px;
+  background:var(--paper);
+}
+#shareCard .sc-year-head{
+  display:flex;
+  justify-content:space-between;
+  align-items:baseline;
+  border-bottom:1px solid var(--line);
+  padding-bottom:6px;
+  margin-bottom:10px;
+}
+#shareCard .sc-year-num{
+  font-family:'Noto Serif TC',serif;
+  font-weight:900;
+  font-size:24px;
+  color:var(--indigo);
+}
+#shareCard .sc-year-vol{font-size:13px;color:var(--ink-soft);letter-spacing:1px}
+#shareCard .sc-items{
+  display:flex;
+  flex-direction:column;
+  gap:7px;
+}
+#shareCard .sc-item{
+  position:relative;
+  overflow:hidden;
+  font-size:19px;
+  line-height:1.35;
+  padding:7px 11px;
+  border-radius:6px;
+  border:1.5px solid var(--line);
+  background:var(--bg);
+  color:var(--ink);
+}
+#shareCard .sc-item.seen{
+  background:var(--stamp);
+  border-color:var(--stamp-dark);
+  color:#fff8f0;
+  font-weight:700;
+}
+#shareCard .sc-item.seen::after{
+  content:'撿';
+  position:absolute;
+  right:-6px;top:-12px;
+  font-family:'Noto Serif TC',serif;
+  font-size:28px;
+  color:rgba(255,255,255,.18);
+  transform:rotate(12deg);
+  pointer-events:none;
+}
+#shareCard .sc-footer{
+  margin-top:32px;
+  padding-top:24px;
+  border-top:2px dashed var(--line);
+  display:flex;
+  justify-content:space-between;
+  font-size:20px;
+  color:var(--ink-soft);
+  letter-spacing:1px;
+}
 </style>
 </head>
 <body>
 
 <div class="toolbar">
-  <button class="btn-primary" onclick="downloadPoster()">下載你的撿漏推薦名單</button>
+  <button class="btn-primary" onclick="downloadShareCard()">下載分享卡（社群版）</button>
+  <button class="btn-ghost" onclick="downloadPoster()">下載完整清單（個人存檔）</button>
   <button class="btn-ghost" onclick="resetAll()">清除紀錄</button>
 </div>
 
@@ -240,6 +391,8 @@ footer.note{
 
   <footer class="note">動畫撿漏小隊 · 2006–2025</footer>
 </div>
+
+<div id="shareCard"></div>
 
 <script>
 const data={
@@ -342,7 +495,68 @@ async function downloadPoster(){
   const canvas=await html2canvas(document.getElementById('poster'),{backgroundColor:'#fffdf8',scale:2});
   const a=document.createElement('a');
   a.href=canvas.toDataURL('image/png');
-  a.download='動畫撿漏推薦名單.png';
+  a.download='動畫撿漏完整清單.png';
+  a.click();
+}
+
+function buildShareCard(){
+  const seen=Object.values(checked).filter(Boolean).length;
+  const rate=Math.round(seen/TOTAL*100);
+  const years=Object.keys(data);
+  const mid=Math.ceil(years.length/2);
+  const leftYears=years.slice(0,mid);
+  const rightYears=years.slice(mid);
+
+  function renderCol(yearList, startIdx){
+    return yearList.map((y,i)=>{
+      const idx=startIdx+i+1;
+      const items=data[y].map(name=>{
+        const cls='sc-item'+(checked[name]?' seen':'');
+        return '<div class="'+cls+'">'+name+'</div>';
+      }).join('');
+      return '<div class="sc-year-block">'+
+        '<div class="sc-year-head"><span class="sc-year-num">'+y+'</span><span class="sc-year-vol">第'+String(idx).padStart(2,'0')+'輯</span></div>'+
+        '<div class="sc-items">'+items+'</div>'+
+        '</div>';
+    }).join('');
+  }
+
+  const leftHTML=renderCol(leftYears,0);
+  const rightHTML=renderCol(rightYears,leftYears.length);
+
+  const card=document.getElementById('shareCard');
+  card.innerHTML=
+    '<div class="sc-eyebrow">2006–2025 動畫撿漏</div>'+
+    '<h1 class="sc-title">我的撿漏戰績單</h1>'+
+    '<p class="sc-sub">這些作品當年討論度很高，但很多人其實沒補完，你看過幾部？</p>'+
+    '<div class="sc-stats">'+
+      '<div class="sc-stat"><div class="l">已看數</div><div class="v">'+seen+' / '+TOTAL+'</div></div>'+
+      '<div class="sc-stat"><div class="l">完成率</div><div class="v">'+rate+'%</div></div>'+
+      '<div class="sc-stat rank"><div class="l">老宅稱號</div><div class="v">'+getTitle(rate)+'</div></div>'+
+      '<div class="sc-stat rank"><div class="l">擊敗朋友圈</div><div class="v">'+getPercentile(rate)+'%</div></div>'+
+    '</div>'+
+    '<div class="sc-legend"><span><span class="dot seen"></span>已看過</span><span><span class="dot unseen"></span>還沒看</span></div>'+
+    '<div class="sc-list">'+
+      '<div class="sc-col">'+leftHTML+'</div>'+
+      '<div class="sc-col">'+rightHTML+'</div>'+
+    '</div>'+
+    '<div class="sc-footer"><span>動畫撿漏小隊</span><span>2006–2025</span></div>';
+}
+
+async function downloadShareCard(){
+  buildShareCard();
+  const card=document.getElementById('shareCard');
+  await new Promise(r=>setTimeout(r,50));
+  const canvas=await html2canvas(card,{
+    backgroundColor:'#fffdf8',
+    scale:2,
+    width:1080,
+    height:card.scrollHeight,
+    windowWidth:1080
+  });
+  const a=document.createElement('a');
+  a.href=canvas.toDataURL('image/png');
+  a.download='動畫撿漏戰績分享卡.png';
   a.click();
 }
 
