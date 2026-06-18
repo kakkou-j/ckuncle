@@ -284,12 +284,53 @@ footer.note{
   color:#999;
   padding:10px 24px 18px;
 }
+
+/* ---- In-app browser warning banner ---- */
+#inappBanner{
+  display:none;
+  max-width:1080px;
+  margin:0 auto 14px;
+  background:#fff4e0;
+  border:1px solid #e8c98a;
+  border-radius:8px;
+  padding:10px 14px;
+  font-size:13px;
+  line-height:1.6;
+  color:#5a4a23;
+  align-items:center;
+  gap:10px;
+  flex-wrap:wrap;
+}
+#inappBanner.show{display:flex}
+#inappBanner .ib-msg{flex:1 1 220px}
+#inappBanner button{
+  font-size:13px;
+  padding:7px 14px;
+  white-space:nowrap;
+}
+#inappBanner .ib-action{
+  background:var(--stamp);
+  color:#fff8f0;
+}
+#inappBanner .ib-close{
+  background:transparent;
+  border:1px solid #e8c98a;
+  color:#5a4a23;
+  padding:7px 10px;
+}
 </style>
 </head>
 <body>
 
+<div id="inappBanner">
+  <span class="ib-msg" id="inappBannerMsg"></span>
+  <button class="ib-action" id="inappBannerBtn" type="button"></button>
+  <button class="ib-close" type="button" onclick="dismissInAppBanner()">關閉</button>
+</div>
+
 <div class="toolbar">
-  <button class="btn-ghost" onclick="downloadPoster()">下載分享卡（社群版）</button>
+  <button class="btn-ghost" onclick="downloadShareCard()">下載分享卡（社群版）</button>
+  <button class="btn-ghost" onclick="downloadPoster()">下載完整清單圖</button>
   <button class="btn-ghost" onclick="resetAll()">清除紀錄</button>
 </div>
 
@@ -423,7 +464,111 @@ function resetAll(){
   render();
 }
 
+/* ---- 偵測熱門 SNS App 內建瀏覽器，並嘗試導向系統瀏覽器 ---- */
+function detectInAppBrowser(){
+  const ua=navigator.userAgent||'';
+  const isAndroid=/Android/i.test(ua);
+  const isIOS=/iPhone|iPad|iPod/i.test(ua);
+  const rules=[
+    {name:'Facebook', re:/FBAN|FBAV|FB_IAB|FBSV/i},
+    {name:'Instagram', re:/Instagram/i},
+    {name:'Threads', re:/Barcelona/i},
+    {name:'LINE', re:/\bLine\//i},
+    {name:'WeChat', re:/MicroMessenger/i},
+    {name:'Weibo', re:/Weibo/i},
+    {name:'TikTok', re:/musical_ly|BytedanceWebview|TikTok/i},
+    {name:'Snapchat', re:/Snapchat/i}
+  ];
+  let app=null;
+  for(const r of rules){ if(r.re.test(ua)){ app=r.name; break; } }
+  return {isInApp:!!app, app, isAndroid, isIOS};
+}
+
+// Android：嘗試用 intent:// 把目前頁面交給系統瀏覽器（Chrome）開啟
+// 若手機沒有 Chrome，會透過 browser_fallback_url 退回原本頁面，不會卡死
+function escapeToSystemBrowser(){
+  const url=location.href;
+  const noScheme=url.replace(/^https?:\/\//,'');
+  const fallback=encodeURIComponent(url);
+  const intentUrl='intent://'+noScheme+'#Intent;scheme=https;package=com.android.chrome;S.browser_fallback_url='+fallback+';end';
+  location.href=intentUrl;
+}
+
+function copyCurrentLink(){
+  const url=location.href;
+  const done=()=>alert('已複製連結，請貼到 Safari／Chrome 等瀏覽器開啟');
+  const fail=()=>{
+    const ta=document.createElement('textarea');
+    ta.value=url;
+    ta.style.position='fixed';
+    ta.style.left='-9999px';
+    document.body.appendChild(ta);
+    ta.select();
+    try{ document.execCommand('copy'); done(); }
+    catch(e){ alert('複製失敗，請手動複製網址：\n'+url); }
+    document.body.removeChild(ta);
+  };
+  if(navigator.clipboard && navigator.clipboard.writeText){
+    navigator.clipboard.writeText(url).then(done).catch(fail);
+  } else {
+    fail();
+  }
+}
+
+let inAppInfo={isInApp:false};
+
+function showInAppBanner(info){
+  const banner=document.getElementById('inappBanner');
+  const msg=document.getElementById('inappBannerMsg');
+  const btn=document.getElementById('inappBannerBtn');
+  if(info.isAndroid){
+    msg.textContent='偵測到您正在「'+(info.app||'App 內建')+'」瀏覽器中開啟，下載圖片可能會失敗，建議改用系統瀏覽器開啟。';
+    btn.textContent='用瀏覽器開啟';
+    btn.onclick=escapeToSystemBrowser;
+  } else if(info.isIOS){
+    msg.textContent='偵測到您正在「'+(info.app||'App 內建')+'」瀏覽器中開啟。iOS 無法自動跳轉，請點右上角「⋯」或分享圖示，選擇「在 Safari 中開啟」再下載。';
+    btn.textContent='複製連結';
+    btn.onclick=copyCurrentLink;
+  } else {
+    msg.textContent='偵測到您正在「'+(info.app||'App 內建')+'」瀏覽器中開啟，下載圖片可能會失敗，建議改用系統瀏覽器開啟。';
+    btn.textContent='複製連結';
+    btn.onclick=copyCurrentLink;
+  }
+  banner.classList.add('show');
+}
+
+function dismissInAppBanner(){
+  document.getElementById('inappBanner').classList.remove('show');
+}
+
+// 點下載按鈕時，如果還在 App 內建瀏覽器裡，先提醒／嘗試跳轉，避免下載到一半失敗
+function warnIfInApp(){
+  if(!inAppInfo.isInApp) return false;
+  if(inAppInfo.isAndroid){
+    const ok=confirm('偵測到目前在「'+inAppInfo.app+'」內建瀏覽器中，下載可能會失敗。\n要嘗試改用系統瀏覽器開啟嗎？');
+    if(ok){ escapeToSystemBrowser(); return true; }
+    return false;
+  }
+  if(inAppInfo.isIOS){
+    alert('偵測到目前在「'+inAppInfo.app+'」內建瀏覽器中，iOS 無法直接下載圖片。\n請先點右上角「⋯」或分享圖示，選擇「在 Safari 中開啟」，再回來下載一次。');
+    return true;
+  }
+  return false;
+}
+
+(function initInAppCheck(){
+  inAppInfo=detectInAppBrowser();
+  if(inAppInfo.isInApp){
+    showInAppBanner(inAppInfo);
+    if(inAppInfo.isAndroid){
+      // 先讓橫幅顯示一下，再自動嘗試跳轉到系統瀏覽器
+      setTimeout(escapeToSystemBrowser, 700);
+    }
+  }
+})();
+
 async function downloadPoster(){
+  if(warnIfInApp()) return;
   const canvas=await html2canvas(document.getElementById('poster'),{backgroundColor:'#fffdf8',scale:2});
   const a=document.createElement('a');
   a.href=canvas.toDataURL('image/png');
@@ -457,6 +602,7 @@ function buildShareCard(){
 }
 
 async function downloadShareCard(){
+  if(warnIfInApp()) return;
   buildShareCard();
   const card=document.getElementById('shareCard');
   await new Promise(r=>setTimeout(r,50));
