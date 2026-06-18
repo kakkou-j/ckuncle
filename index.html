@@ -1,36 +1,352 @@
-<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>動畫撿漏 Ultimate Final++</title>
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>動畫撿漏 Ultimate Final++ v3</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@500;700;900&family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
 <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
 <style>
-body{font-family:sans-serif;background:#f7f3ea;padding:16px}
-#poster{background:#fff;padding:20px}
-.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px}
-.year{border:1px solid #ccc;padding:8px}
-.item{cursor:pointer;padding:3px}
-.seen{background:#eef3ff;border-left:4px solid #4b6cb7;font-weight:700}
-</style></head><body>
-<div><button onclick='downloadPoster()'>下載你的撿漏推薦名單</button><span id='stats'></span></div>
-<div id='poster'><h1>2006–2025 動畫撿漏推薦表</h1><div class='grid' id='grid'></div></div>
+:root{
+  --bg:#f7f3ea;
+  --paper:#fffdf8;
+  --ink:#2b2520;
+  --ink-soft:#7a7064;
+  --line:#ddd6c5;
+  --stamp:#b3261e;
+  --stamp-dark:#8c1d17;
+  --indigo:#3c4a6b;
+  --gold:#c8a13b;
+}
+*{box-sizing:border-box}
+body{
+  margin:0;
+  font-family:'Noto Sans TC',sans-serif;
+  background:var(--bg);
+  color:var(--ink);
+  padding:24px 16px 60px;
+}
+.toolbar{
+  max-width:1080px;
+  margin:0 auto 16px;
+  display:flex;
+  flex-wrap:wrap;
+  gap:10px;
+  align-items:center;
+}
+button{
+  font-family:'Noto Sans TC',sans-serif;
+  font-weight:700;
+  font-size:14px;
+  border:none;
+  border-radius:6px;
+  padding:10px 18px;
+  cursor:pointer;
+  transition:transform .15s ease, box-shadow .15s ease;
+}
+button:active{transform:translateY(1px)}
+.btn-primary{
+  background:var(--stamp);
+  color:#fff8f0;
+  box-shadow:0 2px 0 var(--stamp-dark);
+}
+.btn-primary:hover{box-shadow:0 3px 8px rgba(140,29,23,.35)}
+.btn-ghost{
+  background:transparent;
+  color:var(--ink-soft);
+  border:1px solid var(--line);
+}
+.btn-ghost:hover{border-color:var(--stamp);color:var(--stamp)}
+
+#poster{
+  max-width:1080px;
+  margin:0 auto;
+  background:var(--paper);
+  border:1px solid var(--line);
+  border-radius:10px;
+  padding:32px clamp(16px,4vw,40px) 40px;
+  box-shadow:0 1px 0 rgba(0,0,0,.03);
+}
+.sprockets{
+  display:flex;
+  gap:10px;
+  margin-bottom:18px;
+}
+.sprockets span{
+  width:9px;height:9px;border-radius:50%;
+  background:var(--line);
+}
+header h1{
+  font-family:'Noto Serif TC',serif;
+  font-weight:900;
+  font-size:clamp(24px,4vw,34px);
+  margin:0 0 6px;
+  letter-spacing:.5px;
+}
+header p.sub{
+  margin:0 0 24px;
+  color:var(--ink-soft);
+  font-size:14px;
+  line-height:1.7;
+  border-left:3px solid var(--gold);
+  padding-left:10px;
+}
+
+.stats{
+  display:flex;
+  flex-wrap:wrap;
+  gap:14px;
+  margin-bottom:8px;
+  padding-bottom:22px;
+  border-bottom:1px dashed var(--line);
+}
+.stat-card{
+  flex:1 1 150px;
+  background:var(--bg);
+  border:1px solid var(--line);
+  border-radius:8px;
+  padding:12px 14px;
+}
+.stat-card .label{
+  font-size:11px;
+  letter-spacing:1px;
+  color:var(--ink-soft);
+  text-transform:uppercase;
+  margin-bottom:4px;
+}
+.stat-card .value{
+  font-family:'Noto Serif TC',serif;
+  font-weight:700;
+  font-size:20px;
+  color:var(--indigo);
+}
+.stat-card.rank .value{color:var(--stamp)}
+
+.grid{
+  display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(230px,1fr));
+  gap:16px;
+  margin-top:24px;
+}
+.year{
+  border:1px solid var(--line);
+  border-radius:8px;
+  padding:14px 14px 16px;
+  background:var(--paper);
+}
+.year-head{
+  display:flex;
+  align-items:baseline;
+  justify-content:space-between;
+  margin-bottom:10px;
+  border-bottom:1px solid var(--line);
+  padding-bottom:6px;
+}
+.year-num{
+  font-family:'Noto Serif TC',serif;
+  font-weight:900;
+  font-size:20px;
+  color:var(--indigo);
+}
+.year-vol{
+  font-size:11px;
+  color:var(--ink-soft);
+  letter-spacing:1px;
+}
+.items{
+  display:flex;
+  flex-wrap:wrap;
+  gap:6px;
+}
+.item{
+  position:relative;
+  overflow:hidden;
+  display:inline-block;
+  font-size:13.5px;
+  line-height:1.4;
+  padding:6px 10px;
+  border-radius:5px;
+  border:1px solid var(--line);
+  background:var(--bg);
+  color:var(--ink);
+  cursor:pointer;
+  user-select:none;
+  transition:background .2s ease, color .2s ease, transform .2s ease, box-shadow .2s ease, border-color .2s ease;
+}
+.item:hover{border-color:var(--stamp)}
+.item.seen{
+  background:var(--stamp);
+  border-color:var(--stamp-dark);
+  color:#fff8f0;
+  font-weight:700;
+  transform:rotate(-1deg);
+  box-shadow:0 2px 6px rgba(140,29,23,.35);
+}
+.item.seen::after{
+  content:'撿';
+  position:absolute;
+  right:-8px;top:-14px;
+  font-family:'Noto Serif TC',serif;
+  font-size:36px;
+  color:rgba(255,255,255,.16);
+  transform:rotate(12deg);
+  pointer-events:none;
+}
+
+footer.note{
+  margin-top:28px;
+  text-align:right;
+  font-size:11px;
+  color:var(--ink-soft);
+  letter-spacing:1px;
+}
+</style>
+</head>
+<body>
+
+<div class="toolbar">
+  <button class="btn-primary" onclick="downloadPoster()">下載你的撿漏推薦名單</button>
+  <button class="btn-ghost" onclick="resetAll()">清除紀錄</button>
+</div>
+
+<div id="poster">
+  <div class="sprockets"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></div>
+  <header>
+    <h1>2006–2025 動畫撿漏推薦表</h1>
+    <p class="sub">這些作品當年討論度很高，但現在很多人其實沒補完的冷門番，你看過幾部？</p>
+  </header>
+
+  <div class="stats">
+    <div class="stat-card">
+      <div class="label">已看數</div>
+      <div class="value" id="statSeen">0 / 200</div>
+    </div>
+    <div class="stat-card">
+      <div class="label">完成率</div>
+      <div class="value" id="statRate">0%</div>
+    </div>
+    <div class="stat-card rank">
+      <div class="label">老宅稱號</div>
+      <div class="value" id="statTitle">清醒的觀光客</div>
+    </div>
+    <div class="stat-card rank">
+      <div class="label">擊敗朋友圈</div>
+      <div class="value" id="statBeat">0%</div>
+    </div>
+  </div>
+
+  <div class="grid" id="grid"></div>
+
+  <footer class="note">動畫撿漏小隊 · 2006–2025</footer>
+</div>
+
 <script>
-const data={"2006": ["歡迎加入NHK", "BLACK LAGOON", "寒蟬鳴泣之時", "死亡筆記本", "Kanon", "Ergo Proxy", "彩雲國物語", "地獄少女", "武裝鍊金", "貧乏姊妹物語"], "2007": ["Baccano!", "School Days", "黑之契約者", "幸運☆星", "瀨戶的花嫁", "旋風管家", "天元突破", "蟲之歌", "永生之酒", "魔法人力派遣公司"], "2008": ["請替換為2008正式名單1", "請替換為2008正式名單2", "請替換為2008正式名單3", "請替換為2008正式名單4", "請替換為2008正式名單5", "請替換為2008正式名單6", "請替換為2008正式名單7", "請替換為2008正式名單8", "請替換為2008正式名單9", "請替換為2008正式名單10"], "2009": ["請替換為2009正式名單1", "請替換為2009正式名單2", "請替換為2009正式名單3", "請替換為2009正式名單4", "請替換為2009正式名單5", "請替換為2009正式名單6", "請替換為2009正式名單7", "請替換為2009正式名單8", "請替換為2009正式名單9", "請替換為2009正式名單10"], "2010": ["請替換為2010正式名單1", "請替換為2010正式名單2", "請替換為2010正式名單3", "請替換為2010正式名單4", "請替換為2010正式名單5", "請替換為2010正式名單6", "請替換為2010正式名單7", "請替換為2010正式名單8", "請替換為2010正式名單9", "請替換為2010正式名單10"], "2011": ["請替換為2011正式名單1", "請替換為2011正式名單2", "請替換為2011正式名單3", "請替換為2011正式名單4", "請替換為2011正式名單5", "請替換為2011正式名單6", "請替換為2011正式名單7", "請替換為2011正式名單8", "請替換為2011正式名單9", "請替換為2011正式名單10"], "2012": ["請替換為2012正式名單1", "請替換為2012正式名單2", "請替換為2012正式名單3", "請替換為2012正式名單4", "請替換為2012正式名單5", "請替換為2012正式名單6", "請替換為2012正式名單7", "請替換為2012正式名單8", "請替換為2012正式名單9", "請替換為2012正式名單10"], "2013": ["請替換為2013正式名單1", "請替換為2013正式名單2", "請替換為2013正式名單3", "請替換為2013正式名單4", "請替換為2013正式名單5", "請替換為2013正式名單6", "請替換為2013正式名單7", "請替換為2013正式名單8", "請替換為2013正式名單9", "請替換為2013正式名單10"], "2014": ["請替換為2014正式名單1", "請替換為2014正式名單2", "請替換為2014正式名單3", "請替換為2014正式名單4", "請替換為2014正式名單5", "請替換為2014正式名單6", "請替換為2014正式名單7", "請替換為2014正式名單8", "請替換為2014正式名單9", "請替換為2014正式名單10"], "2015": ["請替換為2015正式名單1", "請替換為2015正式名單2", "請替換為2015正式名單3", "請替換為2015正式名單4", "請替換為2015正式名單5", "請替換為2015正式名單6", "請替換為2015正式名單7", "請替換為2015正式名單8", "請替換為2015正式名單9", "請替換為2015正式名單10"], "2016": ["請替換為2016正式名單1", "請替換為2016正式名單2", "請替換為2016正式名單3", "請替換為2016正式名單4", "請替換為2016正式名單5", "請替換為2016正式名單6", "請替換為2016正式名單7", "請替換為2016正式名單8", "請替換為2016正式名單9", "請替換為2016正式名單10"], "2017": ["請替換為2017正式名單1", "請替換為2017正式名單2", "請替換為2017正式名單3", "請替換為2017正式名單4", "請替換為2017正式名單5", "請替換為2017正式名單6", "請替換為2017正式名單7", "請替換為2017正式名單8", "請替換為2017正式名單9", "請替換為2017正式名單10"], "2018": ["請替換為2018正式名單1", "請替換為2018正式名單2", "請替換為2018正式名單3", "請替換為2018正式名單4", "請替換為2018正式名單5", "請替換為2018正式名單6", "請替換為2018正式名單7", "請替換為2018正式名單8", "請替換為2018正式名單9", "請替換為2018正式名單10"], "2019": ["請替換為2019正式名單1", "請替換為2019正式名單2", "請替換為2019正式名單3", "請替換為2019正式名單4", "請替換為2019正式名單5", "請替換為2019正式名單6", "請替換為2019正式名單7", "請替換為2019正式名單8", "請替換為2019正式名單9", "請替換為2019正式名單10"], "2020": ["請替換為2020正式名單1", "請替換為2020正式名單2", "請替換為2020正式名單3", "請替換為2020正式名單4", "請替換為2020正式名單5", "請替換為2020正式名單6", "請替換為2020正式名單7", "請替換為2020正式名單8", "請替換為2020正式名單9", "請替換為2020正式名單10"], "2021": ["請替換為2021正式名單1", "請替換為2021正式名單2", "請替換為2021正式名單3", "請替換為2021正式名單4", "請替換為2021正式名單5", "請替換為2021正式名單6", "請替換為2021正式名單7", "請替換為2021正式名單8", "請替換為2021正式名單9", "請替換為2021正式名單10"], "2022": ["請替換為2022正式名單1", "請替換為2022正式名單2", "請替換為2022正式名單3", "請替換為2022正式名單4", "請替換為2022正式名單5", "請替換為2022正式名單6", "請替換為2022正式名單7", "請替換為2022正式名單8", "請替換為2022正式名單9", "請替換為2022正式名單10"], "2023": ["請替換為2023正式名單1", "請替換為2023正式名單2", "請替換為2023正式名單3", "請替換為2023正式名單4", "請替換為2023正式名單5", "請替換為2023正式名單6", "請替換為2023正式名單7", "請替換為2023正式名單8", "請替換為2023正式名單9", "請替換為2023正式名單10"], "2024": ["請替換為2024正式名單1", "請替換為2024正式名單2", "請替換為2024正式名單3", "請替換為2024正式名單4", "請替換為2024正式名單5", "請替換為2024正式名單6", "請替換為2024正式名單7", "請替換為2024正式名單8", "請替換為2024正式名單9", "請替換為2024正式名單10"], "2025": ["請替換為2025正式名單1", "請替換為2025正式名單2", "請替換為2025正式名單3", "請替換為2025正式名單4", "請替換為2025正式名單5", "請替換為2025正式名單6", "請替換為2025正式名單7", "請替換為2025正式名單8", "請替換為2025正式名單9", "請替換為2025正式名單10"]};
-let checked=JSON.parse(localStorage.getItem('anime_ultimate')||'{}');
-for(const y in data){
- const box=document.createElement('div');box.className='year';box.innerHTML='<h3>'+y+'</h3>';
- data[y].forEach(n=>{
-   const d=document.createElement('div');
-   d.className='item'+(checked[n]?' done':'');
-   d.textContent=(checked[n]?'☑ ':'☐ ')+n;
-   d.onclick=()=>{checked[n]=!checked[n];localStorage.setItem('anime_ultimate',JSON.stringify(checked));location.reload();};
-   box.appendChild(d);
- });
- grid.appendChild(box);
+const data={
+"2006":["歡迎加入NHK","BLACK LAGOON","寒蟬鳴泣之時","死亡筆記本","仰望半月的夜空","Kanon","武裝鍊金","Ergo Proxy","彩雲國物語","地獄少女"],
+"2007":["天元突破 紅蓮螺巖","黑之契約者","幸運☆星","Baccano! 永生之酒","蟲之歌","灼眼的夏娜Ⅱ","零之使魔～雙月騎士～","瀨戶的花嫁","神靈狩 Ghost Hound","王牌投手 振臂高揮"],
+"2008":["虎與龍","狼與辛香料","夏目友人帳","黑執事","染紅的街道","伯爵與妖精","今日的5年2班","true tears","食靈－零－","二十面相少女"],
+"2009":["東之伊甸","天降之物","戰場女武神","海貓鳴泣之時","學生會的一存","聖劍鍛造師","肯普法","青之文學","空中鞦韆","CANAAN"],
+"2010":["無頭騎士異聞錄！！","Angel Beats!","四疊半神話大系","只有神知道的世界","我的妹妹哪有這麼可愛！","笨蛋，測驗，召喚獸","MM一族","刀語","屍鬼","傳說的勇者的傳說"],
+"2011":["日常","未聞花名","花開物語","罪惡王冠","神的記事本","丹特麗安的書架","C³－魔方少女－","GOSICK","回轉企鵝罐","放浪男孩"],
+"2012":["冰菓","Psycho-Pass","男子高中生的日常","JoJo的奇妙冒險","櫻花莊的寵物女孩","加速世界","中二病也想談戀愛！","新世界より","Another","心連情結"],
+"2013":["打工吧！魔王大人","悠悠哉哉少女日和","果然我的青春戀愛喜劇搞錯了。","Free!","約會大作戰","東京闇鴉","機巧少女不會受傷","白色相簿2","境界的彼方","蒼藍鋼鐵戰艦"],
+"2014":["白箱","月刊少女野崎君","四月是你的謊言","寄生獸","甘城輝煌樂園救世主","野良神","巴哈姆特之怒","東京ESP","遊戲人生","東京喰種"],
+"2015":["一拳超人","不起眼女主角培育法","夏洛特","監獄學園","六花的勇者","終物語","死亡遊行","Classroom☆Crisis","OVERLORD","在地下城尋求邂逅是否搞錯了什麼"],
+"2016":["Re:從零開始的異世界生活","路人超能100","3月的獅子","齊木楠雄的災難","ReLIFE","灰與幻想的格林姆迦爾","美術社大有問題！","烏龍麵之國的金色毛毬","文豪野犬","甲鐵城的卡巴內里"],
+"2017":["來自深淵","小林家的龍女僕","寶石之國","狂賭之淵","少女終末旅行","Princess Principal","泥鯨之子們在沙地上歌唱","人渣的本願","幼女戰記","歡迎來到實力至上主義的教室"],
+"2018":["青春豬頭少年不會夢到兔女郎學姊","比宇宙更遠的地方","Banana Fish","強風吹拂","高分少女","黃金神威","SSSS.GRIDMAN","佐賀偶像是傳奇","賽馬娘 Pretty Derby","工作細胞"],
+"2019":["鬼滅之刃","Dr.STONE 新石紀","炎炎消防隊","五等分的新娘","女高中生的虛度日常","街角魔族","不吉波普不笑","入間同學入魔了！","慎重勇者～這個勇者明明超強卻過分慎重～","星合之空"],
+"2020":["咒術迴戰","無職轉生","映像研！","憂國的莫里亞蒂","安達與島村","虛構推理","隱瞞之事","魔女之旅","總之就是很可愛","魔王學院的不適任者"],
+"2021":["奇巧計程車","Vivy -Fluorite Eye's Song-","Sonny Boy","國王排名","86－不存在的戰區－","藍色時期","陰陽眼見子","平家物語","古見同學有交流障礙症。","東京復仇者"],
+"2022":["孤獨搖滾！","夏日重現","SPY×FAMILY 間諜家家酒","鏈鋸人","明日同學的水手服","Lycoris Recoil 莉可麗絲","異世界舅舅","不道德公會","影之實力者想成為影之強者！","戀上換裝娃娃"],
+"2023":["葬送的芙莉蓮","我推的孩子","天國大魔境","藥師少女的獨語","MyGO!!!!!","不死不運","神明活動","豬肝記得煮熟再吃","香格里拉．開拓異境","超超超超超喜歡你的100個女朋友"],
+"2024":["迷宮飯","Girls Band Cry","膽大黨","敗北女角太多了！","小市民系列","地。－關於地球的運動－","義妹生活","青之箱","我獨自升級","2.5次元的誘惑"],
+"2025":["金牌得主","藥師少女的獨語 第二季","琉璃寶石","古諾希亞","末日酒店","時光流逝飯菜依舊美味","東島丹三郎想成為假面騎士","彈珠汽水瓶裡的千歲同學","廢淵戰鬼","全修。"]
+};
+
+const STORAGE_KEY='anime_picker_v3';
+let checked={};
+try{ checked=JSON.parse(localStorage.getItem(STORAGE_KEY)||'{}'); }catch(e){ checked={}; }
+
+const TOTAL=Object.values(data).reduce((sum,arr)=>sum+arr.length,0);
+const grid=document.getElementById('grid');
+const statSeen=document.getElementById('statSeen');
+const statRate=document.getElementById('statRate');
+const statTitle=document.getElementById('statTitle');
+const statBeat=document.getElementById('statBeat');
+
+function getTitle(rate){
+  if(rate>=90) return '傳說動畫考古學家';
+  if(rate>=70) return '資深老宅認證';
+  if(rate>=50) return '半隻腳已經陷進坑';
+  if(rate>=30) return '雜食動畫愛好者';
+  if(rate>=10) return '偶爾路過番場';
+  return '清醒的觀光客';
 }
-const seen=Object.values(checked).filter(Boolean).length;
-stats.textContent=` 已看 ${seen} / 200`;
+function getPercentile(rate){
+  if(rate<=0) return 0;
+  return Math.min(99, Math.round(Math.sqrt(rate/100)*100));
+}
+
+function updateStats(){
+  const seen=Object.values(checked).filter(Boolean).length;
+  const rate=Math.round(seen/TOTAL*100);
+  statSeen.textContent=seen+' / '+TOTAL;
+  statRate.textContent=rate+'%';
+  statTitle.textContent=getTitle(rate);
+  statBeat.textContent=getPercentile(rate)+'%';
+}
+
+function render(){
+  grid.innerHTML='';
+  let idx=0;
+  for(const y in data){
+    idx++;
+    const yearCard=document.createElement('div');
+    yearCard.className='year';
+
+    const head=document.createElement('div');
+    head.className='year-head';
+    head.innerHTML='<span class="year-num">'+y+'</span><span class="year-vol">第'+String(idx).padStart(2,'0')+'輯</span>';
+    yearCard.appendChild(head);
+
+    const list=document.createElement('div');
+    list.className='items';
+    data[y].forEach(name=>{
+      const chip=document.createElement('span');
+      chip.className='item'+(checked[name]?' seen':'');
+      chip.textContent=name;
+      chip.onclick=()=>{
+        checked[name]=!checked[name];
+        try{ localStorage.setItem(STORAGE_KEY, JSON.stringify(checked)); }catch(e){}
+        chip.classList.toggle('seen');
+        updateStats();
+      };
+      list.appendChild(chip);
+    });
+    yearCard.appendChild(list);
+    grid.appendChild(yearCard);
+  }
+  updateStats();
+}
+
+function resetAll(){
+  if(!confirm('確定要清除所有勾選紀錄嗎？這個動作無法復原。')) return;
+  checked={};
+  try{ localStorage.removeItem(STORAGE_KEY); }catch(e){}
+  render();
+}
+
 async function downloadPoster(){
- const canvas=await html2canvas(document.getElementById('poster'));
- const a=document.createElement('a');
- a.href=canvas.toDataURL();
- a.download='動畫撿漏海報.png';
- a.click();
+  const canvas=await html2canvas(document.getElementById('poster'),{backgroundColor:'#fffdf8',scale:2});
+  const a=document.createElement('a');
+  a.href=canvas.toDataURL('image/png');
+  a.download='動畫撿漏推薦名單.png';
+  a.click();
 }
-</script></body></html>
+
+render();
+</script>
+</body>
+</html>
